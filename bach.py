@@ -78,7 +78,6 @@ class Client(object):
         # queue up initial urls 
         for url in urls:
             self.enqueue(*url)
-        self.enqueue(0,'https://www.yahoo.com')
         task = self.loop.create_task(self.batch_request())
         try:
             self.loop.add_signal_handler(signal.SIGINT, self.shutdown)
