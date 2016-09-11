@@ -1,28 +1,28 @@
 import asyncio
 import logging
-logging.basicConfig(level=logging.WARNING)
+logging.basicConfig(level=logging.DEBUG)
 
-from ananzi.crawler import Crawler
+import bach
 
-class DummyScraper(object):
+class DummyHandler(object):
     def __init__(self):
         pass
 
-    def process(self, url, html):
+    def handle(self, url, html):
         logging.info("Processed: " + url)
-        return (True, ['http://cnn.com', 'http://www.hockeybuzz.com'])
+        return (True,[])
         
 urls = [
     'http://www.google.com',
     'http://www.wikipedia.org/wiki/Barack_Obama',
     'http://reddit.com',
-    'http://area-51-is-real.gov',
+    'http://area-51-exists.gov',#Not real, for now.
     'http://fhqwhgads.com/',#Actually real.
 ]
 
 loop = asyncio.get_event_loop()
-cr = Crawler(loop, DummyScraper())
-cr.launch(urls)
-print("Successful: {}".format(len(cr.done)))
-print("Failed: {}".format(len(cr.failed)))
+client = bach.Client(loop, DummyHandler())
+client.launch(urls)
+print("Successful: {}".format(len(client.done)))
+print("Failed: {}".format(len(client.failed)))
 loop.close()

@@ -3,11 +3,8 @@ import asyncio
 import logging
 
 import aiohttp
-from aiohttp import web
 
-
-
-class Crawler(object): 
+class Client(object): 
     def __init__(self, loop, scraper, max_connections=30, traversal="breadth-first"):
         self.loop = loop
         self.scraper = scraper
@@ -42,7 +39,7 @@ class Crawler(object):
             html = yield from resp.read()
         else:
             if resp.status == 404:
-                err = web.HTTPNotFound
+                err = aiohtp.web.HTTPNotFound
             else:
                 err = aiohttp.HttpProcessingError(
                     code=resp.status, message=resp.reason,
@@ -63,7 +60,7 @@ class Crawler(object):
             self.log.error('Resource not found: ' + url)
             self.failed.add(url)
         else:
-             success, targets = self.scraper.process(url, html)
+             success, targets = self.scraper.handle(url, html)
              if success:
                  for target in targets:
                      self.enqueue(target)
@@ -80,7 +77,7 @@ class Crawler(object):
                 url = yield from asyncio.wait_for(self.queue.get(),5)
                 self.loop.create_task(self.process_page(url))
             except asyncio.TimeoutError:
-                self.log.info("No more pages to crawl.")
+                self.log.info("No more requests.")
                 break
         while self.processing:
             self.log.debug("{} tasks still processing.".format(len(self.processing)))
