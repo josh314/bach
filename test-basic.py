@@ -13,11 +13,11 @@ class DummyHandler(object):
         return True
         
 urls = [
-    'http://www.google.com',
-    'http://www.wikipedia.org/wiki/Barack_Obama',
-    'http://reddit.com',
-    'http://area-51-exists.gov',#Not real, for now.
-    'http://fhqwhgads.com/',#Actually real.
+    (1, 'http://www.google.com'),
+    (1, 'http://www.wikipedia.org/wiki/Barack_Obama'),
+    (1, 'http://reddit.com'),
+    (1, 'http://area-51-exists.gov'),#Not real, for now.
+    (1, 'http://fhqwhgads.com/'),#Actually real.
 ]
 
 loop = asyncio.get_event_loop()

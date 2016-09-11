@@ -9,7 +9,7 @@ class Client(object):
         self.loop = loop
         self.handler = handler
         self.sem = asyncio.Semaphore(max_connections)#For preventing accidental DOS
-        self.queue = asyncio.Queue()
+        self.queue = asyncio.PriorityQueue()
         self.processing = set()
         self.done = set()
         self.failed = set()
@@ -17,9 +17,9 @@ class Client(object):
         self.log = logging.getLogger(__name__)
         self.log.addHandler(logging.NullHandler())
         
-    def enqueue(self, url):
+    def enqueue(self, priority, url):
         if self.active:
-            self.queue.put_nowait(url)
+            self.queue.put_nowait((priority,url))
         
     @asyncio.coroutine
     def get_html(self,url):
@@ -61,10 +61,10 @@ class Client(object):
             self.processing.remove(url)
 
     @asyncio.coroutine
-    def request(self):
+    def batch_request(self):
         while True:
             try:
-                url = yield from asyncio.wait_for(self.queue.get(),5)
+                priority, url = yield from asyncio.wait_for(self.queue.get(),5)
                 self.loop.create_task(self.process_page(url))
             except asyncio.TimeoutError:
                 self.log.info("No more requests.")
@@ -77,8 +77,9 @@ class Client(object):
     def launch(self, urls):
         # queue up initial urls 
         for url in urls:
-            self.enqueue(url)
-        task = self.loop.create_task(self.request())
+            self.enqueue(*url)
+        self.enqueue(0,'https://www.yahoo.com')
+        task = self.loop.create_task(self.batch_request())
         try:
             self.loop.add_signal_handler(signal.SIGINT, self.shutdown)
         except RuntimeError:
