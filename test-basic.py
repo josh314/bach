@@ -10,7 +10,7 @@ class DummyHandler(object):
 
     def handle(self, url, html):
         logging.info("Processed: " + url)
-        return (True,[])
+        return True
         
 urls = [
     'http://www.google.com',

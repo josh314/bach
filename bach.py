@@ -5,28 +5,20 @@ import logging
 import aiohttp
 
 class Client(object): 
-    def __init__(self, loop, scraper, max_connections=30, traversal="breadth-first"):
+    def __init__(self, loop, handler, max_connections=30):
         self.loop = loop
-        self.scraper = scraper
+        self.handler = handler
         self.sem = asyncio.Semaphore(max_connections)#For preventing accidental DOS
-        #Set queue type based upon traversal type
-        if traversal == "depth-first":
-            self.queue = asyncio.LifoQueue()
-        elif traversal == "breadth-first":
-            self.queue = asyncio.Queue()
-        else:
-            raise ValueError("Unknown traversal type. Use 'breadth-first' or 'depth-first'.")
+        self.queue = asyncio.Queue()
         self.processing = set()
         self.done = set()
         self.failed = set()
-        self.seen = set()
         self.active = True
         self.log = logging.getLogger(__name__)
         self.log.addHandler(logging.NullHandler())
         
     def enqueue(self, url):
-        if self.active and url not in self.seen:
-            self.seen.add(url)
+        if self.active:
             self.queue.put_nowait(url)
         
     @asyncio.coroutine
@@ -60,10 +52,8 @@ class Client(object):
             self.log.error('Resource not found: ' + url)
             self.failed.add(url)
         else:
-             success, targets = self.scraper.handle(url, html)
+             success = self.handler.handle(url, html)
              if success:
-                 for target in targets:
-                     self.enqueue(target)
                  self.done.add(url)
              else:
                  self.failed.add(url)
@@ -71,7 +61,7 @@ class Client(object):
             self.processing.remove(url)
 
     @asyncio.coroutine
-    def crawl(self):
+    def request(self):
         while True:
             try:
                 url = yield from asyncio.wait_for(self.queue.get(),5)
@@ -88,7 +78,7 @@ class Client(object):
         # queue up initial urls 
         for url in urls:
             self.enqueue(url)
-        task = self.loop.create_task(self.crawl())
+        task = self.loop.create_task(self.request())
         try:
             self.loop.add_signal_handler(signal.SIGINT, self.shutdown)
         except RuntimeError:
