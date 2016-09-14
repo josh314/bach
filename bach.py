@@ -31,7 +31,7 @@ class Client(object):
             html = yield from resp.read()
         else:
             if resp.status == 404:
-                err = aiohtp.web.HTTPNotFound
+                err = aiohttp.web.HTTPNotFound
             else:
                 err = aiohttp.HttpProcessingError(
                     code=resp.status, message=resp.reason,
@@ -48,8 +48,8 @@ class Client(object):
         try:
             with (yield from self.sem):#Limits number of concurrent requests
                 html = yield from self.get_html(url)
-        except Exception as e:
-            self.log.error('Resource not found: ' + url)
+        except aiohttp.HttpProcessingError as e:
+            self.log.error('{}: {} {}'.format(url,e.code,e.message))
             self.failed.add(url)
         else:
              success = self.handler.handle(url, html)
@@ -57,8 +57,8 @@ class Client(object):
                  self.done.add(url)
              else:
                  self.failed.add(url)
-        finally:
-            self.processing.remove(url)
+#        finally:
+#            self.processing.remove(url)
 
     @asyncio.coroutine
     def batch_request(self):
